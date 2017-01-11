@@ -5,6 +5,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.RequestAcceptEncoding;
 import org.apache.http.client.protocol.ResponseContentEncoding;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.stereotype.Component;
 
@@ -29,10 +30,11 @@ public class Pinger {
      }
 
     private void ping(int number) {
-        System.out.println("Pinging " + number);
+        System.out.print("Pinging " + number);
         HttpGet ping = new HttpGet("https://fspworker" + number + ".herokuapp.com/ping");
         try {
-            client.execute(ping);
+            String result = client.execute(ping, new BasicResponseHandler());
+            System.out.println(result);
         } catch (IOException e) {
             e.printStackTrace();
         }
