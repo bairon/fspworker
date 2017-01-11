@@ -80,7 +80,7 @@ public class Worker {
                     }
                     long endT = System.currentTimeMillis();
                     long diff = endT - startT;
-                    long toSleep = 300 - diff;
+                    long toSleep = 500 - diff;
                     if (toSleep > 0) {
                         sleep(toSleep);
                     }
