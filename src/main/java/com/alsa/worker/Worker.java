@@ -18,17 +18,23 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.RequestAcceptEncoding;
 import org.apache.http.client.protocol.ResponseContentEncoding;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
+import javax.net.ssl.SSLContext;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,13 +64,25 @@ public class Worker {
                     new UsernamePasswordCredentials("user", "user"));
             requestConfig = RequestConfig.custom().
                     setConnectionRequestTimeout(3000).setConnectTimeout(3000).setSocketTimeout(3000).build();
-            client = HttpClientBuilder.create().addInterceptorLast(new RequestAcceptEncoding()).addInterceptorLast(new ResponseContentEncoding()).setDefaultRequestConfig(requestConfig).setDefaultCredentialsProvider(credsProvider).build();
+            org.apache.http.ssl.SSLContextBuilder sslContextBuilder = SSLContextBuilder.create();
+            sslContextBuilder.loadTrustMaterial(new org.apache.http.conn.ssl.TrustSelfSignedStrategy());
+            SSLContext sslContext = sslContextBuilder.build();
+            org.apache.http.conn.ssl.SSLConnectionSocketFactory sslSocketFactory =
+                    new SSLConnectionSocketFactory(sslContext, new org.apache.http.conn.ssl.DefaultHostnameVerifier());
+            client = HttpClientBuilder.create().setSSLSocketFactory(sslSocketFactory).addInterceptorLast(new RequestAcceptEncoding()).addInterceptorLast(new ResponseContentEncoding()).setDefaultRequestConfig(requestConfig).setDefaultCredentialsProvider(credsProvider).build();
             this.ethalone = ImageIO.read(getClass().getClassLoader().getResourceAsStream("static/img/bar.png"));
             this.progressListener = progressListener;
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (KeyManagementException e) {
+            e.printStackTrace();
         }
     }
+
     public void processBlock() {
         try {
             Block block = requestBlock();
@@ -80,7 +98,7 @@ public class Worker {
                     }
                     long endT = System.currentTimeMillis();
                     long diff = endT - startT;
-                    long toSleep = 100 - diff;
+                    long toSleep = 400 - diff;
                     if (toSleep > 0) {
                         sleep(toSleep);
                     }
@@ -102,17 +120,17 @@ public class Worker {
         }
     }
 
-    private void updateProgress(int current, int total){
+    private void updateProgress(int current, int total) {
         if (progressListener != null) {
             progressListener.update(current, total);
         }
     }
 
-    private Entry processEntry(String prntscr, int repeat) throws NotExistException  {
+    private Entry processEntry(String prntscr, int repeat) throws NotExistException {
         int removedscreeninarow = 0;
         for (int i = 0; i < repeat; ++i) {
             try {
-                String url = "http://" + prntscrServer + "/" + prntscr + (removedscreeninarow > 0 ? "?ts=" + System.currentTimeMillis() : "");
+                String url = "https://" + prntscrServer + "/" + prntscr + (removedscreeninarow > 0 ? "?ts=" + System.currentTimeMillis() : "");
                 System.out.print("Visiting " + url);
                 String between = request(client, url);
                 if (between == null) continue;
@@ -190,6 +208,7 @@ public class Worker {
         int end = endtoken == null ? source.length() : source.indexOf(endtoken, start + (starttoken == null ? 0 : starttoken.length()));
         return source.substring(start + (starttoken == null ? 0 : starttoken.length()), end);
     }
+
     private void postEntry(Entry entry) {
         HttpPost postEntry = new HttpPost("http://" + storeServer + WebConstants.POST_ENTRY);
         try {
