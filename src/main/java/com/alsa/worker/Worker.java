@@ -135,8 +135,8 @@ public class Worker {
                 String between = request(client, url);
                 if (between == null) continue;
                 System.out.println(" " + between);
-                if (between.contains("8tdUI8N.png") ||
-                        between.equals("https://img-fotki.yandex.ru/get/49649/5191850.0/0_173a7b_211be8ff_orig")) {
+                if (between.contains("0_173a7b_211be8ff.png") ||
+                        between.equals("https://st.prntscr.com/2017/08/01/1525/img/0_173a7b_211be8ff.png")) {
                     removedscreeninarow++;
                     if (removedscreeninarow <= 10) {
                         sleep(5000);
